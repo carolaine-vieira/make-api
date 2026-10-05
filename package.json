@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "tsx dev-server.ts",
     "new": "tsx scripts/new-endpoint.ts",
+    "build": "tsx scripts/generate-docs.ts",
     "start": "vercel dev",
     "typecheck": "tsc --noEmit"
   },

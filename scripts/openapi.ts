@@ -3,7 +3,7 @@ import { readdirSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-type Meta = { methods: string[]; summary?: string; description?: string; example?: Record<string, unknown> };
+type Meta = { methods: string[]; summary?: string; description?: string; example?: Record<string, unknown> | unknown[] };
 type Handler = (req: unknown, res: unknown) => void | Promise<void>;
 
 export function collectRoutes(dir: string, apiDir = dir): Map<string, string> {
@@ -41,10 +41,10 @@ export async function buildOpenApi(apiDir: string): Promise<unknown> {
         ...(hasBody && {
           requestBody: {
             required: true,
-            content: { 'application/json': { schema: { type: 'object', example: meta.example ?? {} } } },
+            content: { 'application/json': { schema: { type: Array.isArray(meta.example) ? 'array' : 'object', example: meta.example ?? {} } } },
           },
         }),
-        ...(!hasBody && meta.example && {
+        ...(!hasBody && meta.example && !Array.isArray(meta.example) && {
           parameters: Object.entries(meta.example).map(([name, value]) => ({
             name, in: 'query', schema: { type: 'string' }, example: value,
           })),

@@ -8,8 +8,8 @@ type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 export interface EndpointDocs {
   summary?: string;
   description?: string;
-  /** Example JSON body (POST/PUT/PATCH) or query object (GET/DELETE). */
-  example?: Record<string, unknown>;
+  /** Example JSON body (POST/PUT/PATCH, object or array) or query object (GET/DELETE). */
+  example?: Record<string, unknown> | unknown[];
 }
 
 export interface EndpointMeta extends EndpointDocs {

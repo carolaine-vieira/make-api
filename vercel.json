@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/receipts/vr-receipt.ts": {
+      "includeFiles": "assets/**"
+    }
+  }
+}

@@ -3,7 +3,6 @@ import { test } from 'node:test';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createVrReceiptHandler } from './vr-receipt.controller.js';
 
-const KEY = 'test-key';
 const valid = {
   name: 'Maria Souza',
   cpf: '000.000.000-00',
@@ -47,12 +46,11 @@ async function call(
 ) {
   const res = fakeRes();
   const handler = createVrReceiptHandler({
-    env: () => ({ RECEIPT_API_KEY: KEY }),
     now: () => new Date('2026-08-15T12:00:00Z'),
     ...deps,
   });
   await handler(
-    { method: 'POST', headers: { 'x-api-key': KEY }, query: {}, ...req } as unknown as VercelRequest,
+    { method: 'POST', query: {}, ...req } as unknown as VercelRequest,
     res as unknown as VercelResponse,
   );
   return res;
@@ -62,21 +60,6 @@ test('405 for non-POST methods', async () => {
   const res = await call({ method: 'GET' });
   assert.equal(res.statusCode, 405);
   assert.equal(res.headers.allow, 'POST');
-});
-
-test('401 with a missing key', async () => {
-  const res = await call({ headers: {}, body: valid });
-  assert.equal(res.statusCode, 401);
-});
-
-test('401 with a wrong key', async () => {
-  const res = await call({ headers: { 'x-api-key': 'nope' }, body: valid });
-  assert.equal(res.statusCode, 401);
-});
-
-test('fails closed (500) when RECEIPT_API_KEY is not configured', async () => {
-  const res = await call({ body: valid }, { env: () => ({}) });
-  assert.equal(res.statusCode, 500);
 });
 
 test('400 for a missing field, without echoing values', async () => {

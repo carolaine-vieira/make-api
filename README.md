@@ -25,7 +25,7 @@ Open **http://localhost:3000/docs** for Swagger UI and try the endpoints there (
 | ------ | ------------------------------------- | -------------------------------------------- |
 | GET    | `/api`                                | Health check                                 |
 | POST   | `/api/formatters/currency-to-extenso` | Converts a BRL amount to words (pt-BR)       |
-| POST   | `/api/receipts/vr-receipt`            | Generates a VR receipt PDF (needs `x-api-key`) |
+| POST   | `/api/receipts/vr-receipt`            | Generates a VR receipt PDF |
 
 Example:
 
@@ -92,19 +92,18 @@ export const currencyToExtensoController = defineEndpoint({
 
 Renders a "RECIBO" PDF for a meal voucher payment and returns the PDF bytes. It does not save anything: in Make, use the HTTP module's output (**Data**, with *Parse response* off) in a Google Drive > *Upload a File* module. Nothing is stored or logged on the server (no payloads, names or CPFs). This endpoint does **not** use the `{ success, data }` envelope.
 
-Body: `name`, `cpf`, `unitValue`, `quantity`, `totalValue`, `totalInWords` (required); `referenceMonth`, `issueDate` (`YYYY-MM-DD`), `observation`, `fileName` (optional). Numbers may be sent as strings with a dot (`"31.43"`). Header: `x-api-key` must match the `RECEIPT_API_KEY` env var (set it in `.env` locally and in the Vercel project settings).
+Body: `name`, `cpf`, `unitValue`, `quantity`, `totalValue`, `totalInWords` (required); `referenceMonth`, `issueDate` (`YYYY-MM-DD`), `observation`, `fileName` (optional). Numbers may be sent as strings with a dot (`"31.43"`).
 
 | Status | Body                                                        |
 | ------ | ----------------------------------------------------------- |
 | 200    | PDF bytes (`application/pdf`). Suggested file name in `Content-Disposition`, default `Recibo VR - {name} - {month} {year}.pdf` |
 | 400    | `{ error, details? }` field-level messages (never the CPF)  |
-| 401    | Missing or invalid API key                                  |
 | 405    | Not POST                                                    |
-| 500    | `{ error: "server_error" }` (also when `RECEIPT_API_KEY` is not set) |
+| 500    | `{ error: "server_error" }` (PDF generation failed) |
 
 ```bash
-RECEIPT_API_KEY=dev npm run dev   # in another terminal
-curl -X POST "http://localhost:3000/api/receipts/vr-receipt" -H "Content-Type: application/json" -H "x-api-key: $RECEIPT_API_KEY" -d '{"name":"Maria Souza","cpf":"000.000.000-00","unitValue":31.43,"quantity":13,"totalValue":408.59,"totalInWords":"quatrocentos e oito reais e cinquenta e nove centavos","referenceMonth":"Agosto","issueDate":"2026-08-01"}' --output recibo.pdf
+npm run dev   # in another terminal
+curl -X POST "http://localhost:3000/api/receipts/vr-receipt" -H "Content-Type: application/json" -d '{"name":"Maria Souza","cpf":"000.000.000-00","unitValue":31.43,"quantity":13,"totalValue":408.59,"totalInWords":"quatrocentos e oito reais e cinquenta e nove centavos","referenceMonth":"Agosto","issueDate":"2026-08-01"}' --output recibo.pdf
 ```
 
 The fonts and logo in `assets/` are bundled into the function through `vercel.json`.
@@ -126,7 +125,7 @@ Use **HTTP > Make a request**: method POST, body type *Raw*, content type *JSON*
 
 ## Not done yet
 
-- **Authentication:** only `vr-receipt` checks an API key. The other endpoints are open.
+- **Authentication:** endpoints are open, including `vr-receipt` (it returns a PDF with the personal data you send). Add an API key check before relying on it.
 - **Tests:** only the VR receipt feature has tests so far.
 - **Swagger on Vercel:** dev server only.
 - **Schema validation:** services validate their own input. There are no per-field schemas in the OpenAPI spec.

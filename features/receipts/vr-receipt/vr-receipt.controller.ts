@@ -1,29 +1,17 @@
-import { createHash, timingSafeEqual } from 'node:crypto';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { generateReceiptPdf } from './vr-receipt.pdf.js';
 import { parseVrReceipt } from './vr-receipt.schema.js';
 import { sanitizeFileName } from './vr-receipt.utils.js';
 
-type Env = Record<string, string | undefined>;
-
 export interface VrReceiptDeps {
   generate: typeof generateReceiptPdf;
-  env: () => Env;
   now: () => Date;
 }
 
 const defaultDeps: VrReceiptDeps = {
   generate: generateReceiptPdf,
-  env: () => process.env,
   now: () => new Date(),
 };
-
-/** Constant-time comparison (hashing first so the lengths always match). */
-function apiKeyMatches(provided: unknown, expected: string): boolean {
-  if (typeof provided !== 'string') return false;
-  const digest = (value: string) => createHash('sha256').update(value).digest();
-  return timingSafeEqual(digest(provided), digest(expected));
-}
 
 function parseBody(body: unknown): unknown {
   if (typeof body !== 'string') return body;
@@ -45,17 +33,6 @@ export function createVrReceiptHandler(overrides: Partial<VrReceiptDeps> = {}) {
     if (req.method !== 'POST') {
       res.setHeader('Allow', 'POST');
       res.status(405).json({ error: 'method_not_allowed' });
-      return;
-    }
-
-    const expectedKey = deps.env().RECEIPT_API_KEY;
-    if (!expectedKey) {
-      console.error('vr-receipt: RECEIPT_API_KEY is not configured');
-      res.status(500).json({ error: 'server_error' }); // fail closed
-      return;
-    }
-    if (!apiKeyMatches(req.headers['x-api-key'], expectedKey)) {
-      res.status(401).json({ error: 'unauthorized' });
       return;
     }
 
@@ -99,7 +76,7 @@ export const vrReceiptController = Object.assign(createVrReceiptHandler(), {
     methods: ['POST'] as const,
     summary: 'Generate a VR receipt PDF',
     description:
-      'Requires the x-api-key header. Returns the raw PDF (application/pdf) with the file name in Content-Disposition. Errors are JSON: { error, details? }. Responses do not use the { success, data } envelope.',
+      'Returns the raw PDF (application/pdf) with the file name in Content-Disposition. Errors are JSON: { error, details? }. Responses do not use the { success, data } envelope.',
     example: {
       name: 'Maria Souza',
       cpf: '000.000.000-00',
